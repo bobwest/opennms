@@ -32,11 +32,14 @@
       <resource>
         <directory>${project.build.directory}/imported-resources</directory>
       </resource>
+      <resource>
+        <directory>${project.build.directory}/filtered-resources</directory>
+      </resource>
     </resources>
     <plugins>
-    
-    <!-- We copy the diagnostics resources directly into this bundle since     -->
-    <!-- pax-web DefaultResources cannot expose resources on the class path    -->
+
+      <!-- We copy the diagnostics resources directly into this bundle since -->
+      <!-- pax-web DefaultResources cannot expose resources on the class path -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
@@ -63,7 +66,31 @@
           </execution>
         </executions>
       </plugin>
-    
+
+      <!-- copy and process the product descriptor for this project -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>filter-resources</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/filtered-resources</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>src/main/filtered-resources</directory>
+                  <filtering>true</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.opennms.maven.plugins</groupId>
         <artifactId>features-maven-plugin</artifactId>
