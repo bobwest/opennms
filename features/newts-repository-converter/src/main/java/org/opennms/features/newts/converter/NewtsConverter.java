@@ -371,7 +371,7 @@ public class NewtsConverter implements AutoCloseable {
                  .forEach(p -> processStoreByGroupResource(p.getParent()));
 
         } catch (Exception e) {
-            throw NewtsConverterError.create(e, "Error while reading RRD files: {}", e.getMessage());
+            LOG.error("Error while reading RRD files", e);
         }
     }
 
@@ -382,7 +382,8 @@ public class NewtsConverter implements AutoCloseable {
             ds.load(r);
 
         } catch (final IOException e) {
-            throw NewtsConverterError.create("No group information found - please verify storeByGroup settings");
+            LOG.error("No group information found - please verify storeByGroup settings");
+            return;
         }
 
         // Get all groups declared in the ds.properties and process the RRD files
@@ -400,7 +401,7 @@ public class NewtsConverter implements AutoCloseable {
                  .forEach(p -> this.processStoreByMetricResource(p));
 
         } catch (Exception e) {
-            throw NewtsConverterError.create(e, "Error while reading RRD files: {}", e.getMessage());
+            LOG.error("Error while reading RRD files", e);
         }
     }
 
@@ -413,16 +414,18 @@ public class NewtsConverter implements AutoCloseable {
 
         // Load the '.meta' file to get the group name
         final Properties meta = new Properties();
-        try (final BufferedReader r = Files.newBufferedReader(path.resolve(String.format("%s.meta", metric)))) {
+        try (final BufferedReader r = Files.newBufferedReader(metaPath)) {
             meta.load(r);
 
         } catch (final IOException e) {
-            throw Throwables.propagate(e);
+            LOG.error("Failed to read .meta file: {}", metaPath, e);
+            return;
         }
 
         final String group = meta.getProperty("GROUP");
         if (group == null) {
-            throw NewtsConverterError.create("No group information found - please verify storeByGroup settings");
+            LOG.warn("No group information found - please verify storeByGroup settings");
+            return;
         }
 
         // Process the resource
@@ -449,17 +452,21 @@ public class NewtsConverter implements AutoCloseable {
         }
 
         // Load and interpolate the RRD file
-        final AbstractRRD rrd;
+        Path file = null;
+        AbstractRRD rrd = null;
         try {
             if (this.rrdTool) {
-                rrd = RrdConvertUtils.dumpRrd(resourceDir.resolve(fileName + ".rrd").toFile());
+                file = resourceDir.resolve(fileName + ".rrd");
+                rrd = RrdConvertUtils.dumpRrd(file.toFile());
 
             } else {
-                rrd = RrdConvertUtils.dumpJrb(resourceDir.resolve(fileName + ".jrb").toFile());
+                file = resourceDir.resolve(fileName + ".jrb");
+                rrd = RrdConvertUtils.dumpJrb(file.toFile());
             }
 
         } catch (final Exception e) {
-            throw NewtsConverterError.create(e, "Can't parse JRB/RRD {}.(rrd/jrb): {}", resourceDir.resolve(fileName), e.getMessage());
+            LOG.error("Can't parse JRB/RRD file: {}", file, e);
+            return;
         }
 
         // Inject the samples from the RRD file to NewTS
@@ -553,7 +560,7 @@ public class NewtsConverter implements AutoCloseable {
                  });
 
         } catch (Exception e) {
-            throw NewtsConverterError.create(e, "Error while reading RRD files: {}", e.getMessage());
+            LOG.error("Error while reading string.properties", e);
         }
     }
 
