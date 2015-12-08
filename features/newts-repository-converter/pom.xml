@@ -134,46 +134,6 @@
   </dependencies>
   <build>
     <plugins>
-      <!--<plugin>-->
-        <!--<inherited>false</inherited>-->
-        <!--<groupId>org.apache.maven.plugins</groupId>-->
-        <!--<artifactId>maven-shade-plugin</artifactId>-->
-        <!--<version>2.4.1</version>-->
-        <!--<executions>-->
-          <!--<execution>-->
-            <!--<phase>package</phase>-->
-            <!--<goals>-->
-              <!--<goal>shade</goal>-->
-            <!--</goals>-->
-            <!--<configuration>-->
-              <!--<shadedArtifactAttached>true</shadedArtifactAttached>-->
-              <!--<shadedClassifierName>jar-with-dependencies</shadedClassifierName>-->
-		      <!--<filters>-->
-		        <!--<filter>-->
-		          <!--<artifact>*:*</artifact>-->
-		          <!--<excludes>-->
-		            <!--<exclude>META-INF/*.SF</exclude>-->
-		            <!--<exclude>META-INF/*.DSA</exclude>-->
-		            <!--<exclude>META-INF/*.RSA</exclude>-->
-		          <!--</excludes>-->
-		        <!--</filter>-->
-		      <!--</filters>-->
-              <!--<transformers>-->
-                <!--<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">-->
-                  <!--<mainClass>org.opennms.tools.NewtsConverter</mainClass>-->
-                <!--</transformer>-->
-                <!--<transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">-->
-                  <!--<resource>META-INF/spring.handlers</resource>-->
-                <!--</transformer>-->
-                <!--<transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">-->
-                  <!--<resource>META-INF/spring.schemas</resource>-->
-                <!--</transformer>-->
-              <!--</transformers>-->
-            <!--</configuration>-->
-          <!--</execution>-->
-        <!--</executions>-->
-      <!--</plugin>-->
-
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
