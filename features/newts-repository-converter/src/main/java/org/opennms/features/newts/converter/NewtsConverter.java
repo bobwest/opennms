@@ -183,7 +183,7 @@ public class NewtsConverter implements AutoCloseable {
         final Option opennmsHomeOption = new Option("o", "onms-home", true, "OpenNMS Home Directory (defaults to /opt/opennms)");
         options.addOption(opennmsHomeOption);
 
-        final Option rrdPathOption = new Option("r", "rrd-dir", true, "The path to the RRD data (defaults to /var/opennms/rrd)");
+        final Option rrdPathOption = new Option("r", "rrd-dir", true, "The path to the RRD data (defaults to ONMS-HOME/share/rrd)");
         options.addOption(rrdPathOption);
 
         final Option rrdToolOption = new Option("t", "rrd-tool", true, "Whether to use rrdtool or JRobin (defaults to use rrdtool)");
@@ -232,7 +232,7 @@ public class NewtsConverter implements AutoCloseable {
 
         this.rrdDir = cmd.hasOption('r')
                       ? Paths.get(cmd.getOptionValue('r'))
-                      : Paths.get("/var/opennms/rrd");
+                      : this.onmsHome.resolve("share").resolve("rrd");
         if (!Files.exists(this.rrdDir) || !Files.isDirectory(this.rrdDir)) {
             new HelpFormatter().printHelp(80, CMD_SYNTAX, String.format("ERROR: Directory %s doesn't exist%n", this.rrdDir.toAbsolutePath()), options, null);
             System.exit(1);
