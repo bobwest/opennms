@@ -292,7 +292,6 @@ public class NewtsConverter implements AutoCloseable {
         // Initialize OpenNMS
         OnmsProperties.initialize();
 
-        final String strategy = System.getProperty("org.opennms.timeseries.strategy", "rrd");
         final String host = System.getProperty("org.opennms.newts.config.hostname", "localhost");
         final String keyspace = System.getProperty("org.opennms.newts.config.keyspace", "newts");
         int ttl = Integer.parseInt(System.getProperty("org.opennms.newts.config.ttl", "31540000"));
@@ -300,21 +299,24 @@ public class NewtsConverter implements AutoCloseable {
 
         batchSize = Integer.parseInt(System.getProperty("org.opennms.newts.config.max_batch_size", "16"));
 
-        LOG.info("OpenNMS Home: {}", onmsHome);
-        LOG.info("RRD Directory: {}", rrdDir);
-        LOG.info("Use RRDtool Tool: {}", rrdTool);
-        LOG.info("RRDtool CLI: {}", rrdBinary);
-        LOG.info("StoreByGroup: {}", storeByGroup);
-        LOG.info("Timeseries Strategy: {}", strategy);
+        LOG.info("OpenNMS Home: {}", this.onmsHome);
+        LOG.info("RRD Directory: {}", this.rrdDir);
+        LOG.info("Use RRDtool Tool: {}", this.rrdTool);
+        LOG.info("RRDtool CLI: {}", this.rrdBinary);
+        LOG.info("StoreByGroup: {}", this.storeByGroup);
         LOG.info("Conversion Threads: {}", threads);
         LOG.info("Cassandra Host: {}", host);
         LOG.info("Cassandra Port: {}", port);
         LOG.info("Cassandra Keyspace: {}", keyspace);
-        LOG.info("Newts Max Batch Size: {}", batchSize);
+        LOG.info("Newts Max Batch Size: {}", this.batchSize);
         LOG.info("Newts TTL: {}", ttl);
 
-        if (!"newts".equals(strategy)) {
+        if (!"newts".equals(System.getProperty("org.opennms.timeseries.strategy", "rrd"))) {
             throw NewtsConverterError.create("The configured timeseries strategy must be 'newts' on opennms.properties (org.opennms.timeseries.strategy)");
+        }
+
+        if (!"true".equals(System.getProperty("org.opennms.rrd.storeByForeignSource", "false"))) {
+            throw NewtsConverterError.create("The option storeByForeignSource must be enabled in opennms.properties (org.opennms.rrd.storeByForeignSource)");
         }
 
         try {

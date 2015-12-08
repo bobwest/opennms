@@ -30,6 +30,7 @@ Finally, the _Rrd_- or _JRobin_-based data will be converted and persisted to _N
    * Check for the entry `org.opennms.rrd.strategyClass` whether `JRobinRrdStrategy` (_JRobin_) or `JniRrdStrategy` / `MultithreadedJniRrdStrategy` (_RRDTool_) is used.
  . Stop your _OpenNMS_ instance.
  . Reconfigure _OpenNMS_ to persist data to _Newts_ - so, when correctly configured all new samples will be persisted into _Newts_ after _OpenNMS_ is started.
+   Note, that the converter assumes storeByForeignSource to be enabled.
  . Start your _OpenNMS_ instance.
  . Use the _newts-repository-converter_ utility to convert the existing data to _Newts_ by specifying the options that correspond to the information gathered during step #1.
 
