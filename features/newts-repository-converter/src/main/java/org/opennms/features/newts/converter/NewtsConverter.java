@@ -372,6 +372,7 @@ public class NewtsConverter implements AutoCloseable {
 
         } catch (Exception e) {
             LOG.error("Error while reading RRD files", e);
+            return;
         }
     }
 
@@ -402,6 +403,7 @@ public class NewtsConverter implements AutoCloseable {
 
         } catch (Exception e) {
             LOG.error("Error while reading RRD files", e);
+            return;
         }
     }
 
@@ -470,10 +472,16 @@ public class NewtsConverter implements AutoCloseable {
         }
 
         // Inject the samples from the RRD file to NewTS
-        this.injectSamplesToNewts(resourcePath,
-                                  group,
-                                  rrd.getDataSources(),
-                                  rrd.generateSamples());
+        try {
+            this.injectSamplesToNewts(resourcePath,
+                                      group,
+                                      rrd.getDataSources(),
+                                      rrd.generateSamples());
+
+        } catch (final Exception e) {
+            LOG.error("Failed to convert file: {}", file, e);
+            return;
+        }
     }
 
     private void injectSamplesToNewts(final ResourcePath resourcePath,
@@ -561,6 +569,7 @@ public class NewtsConverter implements AutoCloseable {
 
         } catch (Exception e) {
             LOG.error("Error while reading string.properties", e);
+            return;
         }
     }
 
