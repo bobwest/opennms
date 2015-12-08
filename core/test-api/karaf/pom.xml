@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.opennms.core</groupId>
     <artifactId>org.opennms.core.test-api</artifactId>
-    <version>17.0.0-SNAPSHOT</version>
+    <version>17.0.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.opennms.core.test-api</groupId>
@@ -213,14 +213,14 @@
 
     <!-- Other projects necessary to make the features-maven-plugin happy -->
     <dependency>
-      <groupId>org.opennms.features.activemq</groupId>
-      <artifactId>org.opennms.features.activemq.event-forwarder</artifactId>
+      <groupId>org.opennms.features.amqp</groupId>
+      <artifactId>org.opennms.features.amqp.event-forwarder</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.opennms.features.activemq</groupId>
-      <artifactId>org.opennms.features.activemq.event-receiver</artifactId>
+      <groupId>org.opennms.features.amqp</groupId>
+      <artifactId>org.opennms.features.amqp.event-receiver</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>

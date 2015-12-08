@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.opennms</groupId>
     <artifactId>container</artifactId>
-    <version>17.0.0-SNAPSHOT</version>
+    <version>17.0.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.opennms.karaf</groupId>
@@ -208,8 +208,9 @@
             <feature>dashlet-topology</feature>
             <feature>dashlet-url</feature>
             <feature>nrtg</feature>
-            <feature>opennms-activemq-event-forwarder</feature>
-            <feature>opennms-activemq-event-receiver</feature>
+            <feature>opennms-amqp-event-forwarder</feature>
+            <feature>opennms-amqp-event-receiver</feature>
+            <feature>opennms-amqp-alarm-northbounder</feature>
             <feature>opennms-topology-dev</feature>
             <feature>opennms-topology-runtime-base</feature>
             <feature>opennms-topology-runtime-browsers</feature>

@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>org.opennms.features</groupId>
 		<artifactId>org.opennms.features.ticketing</artifactId>
-		<version>17.0.0-SNAPSHOT</version>
+		<version>17.0.1-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>opennms-integration-otrs-31</artifactId>
@@ -25,8 +25,8 @@
 						<configuration>
 							<wsdlOptions>
 								<wsdlOption>
-									<wsdl>src/main/resources/GenericTicketConnector.wsdl</wsdl>
-									<wsdlLocation>classpath:GenericTicketConnector.wsdl</wsdlLocation>
+									<wsdl>src/main/resources/GenericTicketConnectorSOAP.wsdl</wsdl>
+									<wsdlLocation>classpath:GenericTicketConnectorSOAP.wsdl</wsdlLocation>
 									<frontEnd>jaxws21</frontEnd>
 									<faultSerialVersionUID>1</faultSerialVersionUID>
 									<bindingFiles>
