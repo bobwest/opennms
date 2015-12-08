@@ -31,7 +31,6 @@ package org.opennms.features.newts.converter;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,7 +38,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -107,11 +105,21 @@ public class NewtsConverter implements AutoCloseable {
     private final static Timestamp EPOCH = Timestamp.fromEpochMillis(0);
     private final static ValueType<?> ZERO = ValueType.compose(0, MetricType.GAUGE);
 
+    private enum STORAGE_STRATEGY {
+        STORE_BY_METRIC,
+        STORE_BY_GROUP,
+    }
+
+    private enum STORAGE_TOOL {
+        RRDTOOL,
+        JROBIN,
+    }
+
     private final Path onmsHome;
     private final Path rrdDir;
     private final Path rrdBinary;
-    private final boolean storeByGroup;
-    private final boolean rrdTool;
+    private final STORAGE_STRATEGY storageStrategy;
+    private final STORAGE_TOOL storageTool;
 
     private static class ForeignId {
         private final String foreignSource;
@@ -189,13 +197,10 @@ public class NewtsConverter implements AutoCloseable {
         final Option rrdToolOption = new Option("t", "rrd-tool", true, "Whether to use rrdtool or JRobin (defaults to use rrdtool)");
         options.addOption(rrdToolOption);
 
-        final Option rrdBinaryOption = new Option("T",
-                                                  "rrd-binary",
-                                                  true,
-                                                  "The binary path to the rrdtool command (defaults to /usr/bin/rrdtool, only used if rrd-tool is set)");
+        final Option rrdBinaryOption = new Option("T", "rrd-binary", true, "The binary path to the rrdtool command (defaults to /usr/bin/rrdtool, only used if rrd-tool is set)");
         options.addOption(rrdBinaryOption);
 
-        final Option storeByGroupOption = new Option("s", "store-by-group", true, "Whether store by group was enabled or not");
+        final Option storeByGroupOption = new Option("s", "storageStrategy", true, "Whether store by group was enabled or not");
         storeByGroupOption.setRequired(true);
         options.addOption(storeByGroupOption);
 
@@ -239,24 +244,40 @@ public class NewtsConverter implements AutoCloseable {
             throw null;
         }
 
-        try {
-            storeByGroup = BooleanUtils.toBooleanObject(cmd.getOptionValue('s'));
+        switch (cmd.hasOption('s') ? cmd.getOptionValue('s').toLowerCase() : null) {
+            case "storeByMetric":
+            case "sbm":
+            case "false":
+                storageStrategy = STORAGE_STRATEGY.STORE_BY_METRIC;
+                break;
 
-        } catch (NullPointerException e) {
-            new HelpFormatter().printHelp(80, CMD_SYNTAX, String.format("ERROR: Invalid value for storeByGroup%n"), options, null);
-            System.exit(1);
-            throw null;
+            case "storeByGroup":
+            case "sbg":
+            case "true":
+                storageStrategy = STORAGE_STRATEGY.STORE_BY_GROUP;
+                break;
+
+            default:
+                new HelpFormatter().printHelp(80, CMD_SYNTAX, String.format("ERROR: Invalid value for storageStrategy%n"), options, null);
+                System.exit(1);
+                throw null;
         }
 
-        try {
-            rrdTool = cmd.hasOption('t')
-                      ? BooleanUtils.toBooleanObject(cmd.getOptionValue('t'))
-                      : true;
+        switch (cmd.hasOption('t') ? cmd.getOptionValue('t').toLowerCase() : null) {
+            case "rrdtool":
+            case "rrd":
+                storageTool = STORAGE_TOOL.RRDTOOL;
+                break;
 
-        } catch (NullPointerException e) {
-            new HelpFormatter().printHelp(80, CMD_SYNTAX, String.format("ERROR: Invalid value for rrd-tool%n"), options, null);
-            System.exit(1);
-            throw null;
+            case "jrobin":
+            case "jrb":
+                storageTool = STORAGE_TOOL.JROBIN;
+                break;
+
+            default:
+                new HelpFormatter().printHelp(80, CMD_SYNTAX, String.format("ERROR: Invalid value for rrd-tool%n"), options, null);
+                System.exit(1);
+                throw null;
         }
 
         this.rrdBinary = cmd.hasOption('T')
@@ -301,9 +322,9 @@ public class NewtsConverter implements AutoCloseable {
 
         LOG.info("OpenNMS Home: {}", this.onmsHome);
         LOG.info("RRD Directory: {}", this.rrdDir);
-        LOG.info("Use RRDtool Tool: {}", this.rrdTool);
+        LOG.info("Use RRDtool Tool: {}", this.storageTool);
         LOG.info("RRDtool CLI: {}", this.rrdBinary);
-        LOG.info("StoreByGroup: {}", this.storeByGroup);
+        LOG.info("StoreByGroup: {}", this.storageStrategy);
         LOG.info("Conversion Threads: {}", threads);
         LOG.info("Cassandra Host: {}", host);
         LOG.info("Cassandra Port: {}", port);
@@ -356,10 +377,15 @@ public class NewtsConverter implements AutoCloseable {
         this.processStoreByGroupResources(this.rrdDir.resolve("response"));
 
         this.processStringsProperties(this.rrdDir.resolve("snmp"));
-        if (storeByGroup) {
-            this.processStoreByGroupResources(this.rrdDir.resolve("snmp"));
-        } else {
-            this.processStoreByMetricResources(this.rrdDir.resolve("snmp"));
+
+        switch (storageStrategy) {
+            case STORE_BY_GROUP:
+                this.processStoreByGroupResources(this.rrdDir.resolve("snmp"));
+                break;
+
+            case STORE_BY_METRIC:
+                this.processStoreByMetricResources(this.rrdDir.resolve("snmp"));
+                break;
         }
     }
 
@@ -383,7 +409,7 @@ public class NewtsConverter implements AutoCloseable {
             ds.load(r);
 
         } catch (final IOException e) {
-            LOG.error("No group information found - please verify storeByGroup settings");
+            LOG.error("No group information found - please verify storageStrategy settings");
             return;
         }
 
@@ -426,7 +452,7 @@ public class NewtsConverter implements AutoCloseable {
 
         final String group = meta.getProperty("GROUP");
         if (group == null) {
-            LOG.warn("No group information found - please verify storeByGroup settings");
+            LOG.warn("No group information found - please verify storageStrategy settings");
             return;
         }
 
@@ -457,13 +483,16 @@ public class NewtsConverter implements AutoCloseable {
         Path file = null;
         AbstractRRD rrd = null;
         try {
-            if (this.rrdTool) {
-                file = resourceDir.resolve(fileName + ".rrd");
-                rrd = RrdConvertUtils.dumpRrd(file.toFile());
+            switch (this.storageTool) {
+                case RRDTOOL:
+                    file = resourceDir.resolve(fileName + ".rrd");
+                    rrd = RrdConvertUtils.dumpRrd(file.toFile());
+                    break;
 
-            } else {
-                file = resourceDir.resolve(fileName + ".jrb");
-                rrd = RrdConvertUtils.dumpJrb(file.toFile());
+                case JROBIN:
+                    file = resourceDir.resolve(fileName + ".jrb");
+                    rrd = RrdConvertUtils.dumpJrb(file.toFile());
+                    break;
             }
 
         } catch (final Exception e) {

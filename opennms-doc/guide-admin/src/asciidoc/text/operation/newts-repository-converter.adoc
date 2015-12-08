@@ -58,7 +58,7 @@ The _newts-repository-converter_ tool provide the following options and paramete
 | `h` | `help`           | Prints help and usage information                                     | false
 | `o` | `onms-home`      | _OpenNMS_ Home Directory                                                | /opt/opennms
 | `r` | `rrd-dir`        | The path to the RRD data                                              | ONMS-HOME/share/rrd
-| `t` | `rrd-tool`       | Whether to use rrdtool or JRobin                                      | rrdtool
+| `t` | `rrd-tool`       | Whether to use rrdtool or JRobin                                      |
 | `T` | `rrd-binary`     | The binary path to the rrdtool command (only used if rrd-tool is set) | /usr/bin/rrdtool
 | `s` | `store-by-group` | Whether store by group was enabled or not                             |
 | `n` | `threads`        | Number of conversion threads                                          | defaults to number of CPUs
