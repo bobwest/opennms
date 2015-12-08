@@ -541,17 +541,17 @@ public class NewtsConverterIT implements TemporaryDatabaseAware {
                                                                r.getElement("ifInOctets").getTimestamp().asDate().toString(),
                                                                r.getElement("ifInOctets").getValue().doubleValue())));
 
-        repository.select(Context.DEFAULT_CONTEXT,
-                          new Resource(NewtsUtils.toResourceId(ResourcePath.get(RESOURCE_PATH_SNMP, "mib2-interfaces"))),
-                          Optional.of(Timestamp.fromEpochSeconds(1416430800)),
-                          Optional.of(Timestamp.fromEpochSeconds(1416474000)),
-                          new ResultDescriptor(Duration.seconds(7200))
-                                  .datasource("ifInOctets", StandardAggregationFunctions.AVERAGE)
-                                  .export("ifInOctets"),
-                          Optional.of(Duration.seconds(7200)))
-                .forEach(r -> System.out.println(String.format("m: %s\t%11.2f",
-                                                               r.getElement("ifInOctets").getTimestamp().asDate().toString(),
-                                                               r.getElement("ifInOctets").getValue().doubleValue())));
+//        repository.select(Context.DEFAULT_CONTEXT,
+//                          new Resource(NewtsUtils.toResourceId(ResourcePath.get(RESOURCE_PATH_SNMP, "mib2-interfaces"))),
+//                          Optional.of(Timestamp.fromEpochSeconds(1416430800)),
+//                          Optional.of(Timestamp.fromEpochSeconds(1416474000)),
+//                          new ResultDescriptor(Duration.seconds(7200))
+//                                  .datasource("ifInOctets", StandardAggregationFunctions.AVERAGE)
+//                                  .export("ifInOctets"),
+//                          Optional.of(Duration.seconds(7200)))
+//                .forEach(r -> System.out.println(String.format("m: %s\t%11.2f",
+//                                                               r.getElement("ifInOctets").getTimestamp().asDate().toString(),
+//                                                               r.getElement("ifInOctets").getValue().doubleValue())));
 
         final Results<Measurement> result = repository.select(Context.DEFAULT_CONTEXT,
                                                               new Resource(NewtsUtils.toResourceId(ResourcePath.get(RESOURCE_PATH_SNMP, "mib2-interfaces"))),

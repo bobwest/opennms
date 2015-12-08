@@ -526,7 +526,7 @@ public abstract class AbstractRRD {
                         Double current = row.getValue(i).isNaN() ? 0 : row.getValue(i);
                         Double value = last - (current * step);
                         if (value < 0) { // Counter-Wrap emulation
-                            value += Math.pow(2, 32);
+                            value += Math.pow(2, 64);
                         }
                         lastValues.set(i, value);
                         if (!row.getValue(i).isNaN()) {
