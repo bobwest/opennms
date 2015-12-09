@@ -498,20 +498,39 @@ public class NewtsConverter implements AutoCloseable {
             return;
         }
 
-        // Load and interpolate the RRD file
-        Path file = null;
-        AbstractRRD rrd = null;
+        // Load the RRD file
+        final Path file;
+        switch (this.storageTool) {
+            case RRDTOOL:
+                file = resourceDir.resolve(fileName + ".rrd");
+                break;
+
+            case JROBIN:
+                file = resourceDir.resolve(fileName + ".jrb");
+                break;
+
+            default:
+                file = null;
+        }
+
+        if (!Files.exists(file)) {
+            LOG.error("File not found: {}", file);
+            return;
+        }
+
+        final AbstractRRD rrd;
         try {
             switch (this.storageTool) {
                 case RRDTOOL:
-                    file = resourceDir.resolve(fileName + ".rrd");
                     rrd = RrdConvertUtils.dumpRrd(file.toFile());
                     break;
 
                 case JROBIN:
-                    file = resourceDir.resolve(fileName + ".jrb");
                     rrd = RrdConvertUtils.dumpJrb(file.toFile());
                     break;
+
+                default:
+                    rrd = null;
             }
 
         } catch (final Exception e) {
