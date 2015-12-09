@@ -61,7 +61,6 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang.BooleanUtils;
 import org.joda.time.Interval;
 import org.joda.time.Period;
 import org.joda.time.format.PeriodFormatter;
@@ -72,7 +71,6 @@ import org.opennms.netmgt.newts.support.NewtsUtils;
 import org.opennms.netmgt.rrd.model.AbstractDS;
 import org.opennms.netmgt.rrd.model.AbstractRRD;
 import org.opennms.netmgt.rrd.model.RrdConvertUtils;
-import org.opennms.netmgt.rrd.model.RrdSample;
 import org.opennms.newts.api.Counter;
 import org.opennms.newts.api.Gauge;
 import org.opennms.newts.api.MetricType;
@@ -105,21 +103,15 @@ public class NewtsConverter implements AutoCloseable {
     private final static Timestamp EPOCH = Timestamp.fromEpochMillis(0);
     private final static ValueType<?> ZERO = ValueType.compose(0, MetricType.GAUGE);
 
-    private enum STORAGE_STRATEGY {
+    private enum StorageStrategy {
         STORE_BY_METRIC,
         STORE_BY_GROUP,
     }
 
-    private enum STORAGE_TOOL {
+    private enum StorageTool {
         RRDTOOL,
         JROBIN,
     }
-
-    private final Path onmsHome;
-    private final Path rrdDir;
-    private final Path rrdBinary;
-    private final STORAGE_STRATEGY storageStrategy;
-    private final STORAGE_TOOL storageTool;
 
     private static class ForeignId {
         private final String foreignSource;
@@ -131,6 +123,12 @@ public class NewtsConverter implements AutoCloseable {
             this.foreignId = foreignId;
         }
     }
+
+    private final Path onmsHome;
+    private final Path rrdDir;
+    private final Path rrdBinary;
+    private final StorageStrategy storageStrategy;
+    private final StorageTool storageTool;
 
     /**
      * Mapping form node ID to foreign ID.
@@ -200,7 +198,7 @@ public class NewtsConverter implements AutoCloseable {
         final Option rrdBinaryOption = new Option("T", "rrd-binary", true, "The binary path to the rrdtool command (defaults to /usr/bin/rrdtool, only used if rrd-tool is set)");
         options.addOption(rrdBinaryOption);
 
-        final Option storeByGroupOption = new Option("s", "storageStrategy", true, "Whether store by group was enabled or not");
+        final Option storeByGroupOption = new Option("s", "storage-strategy", true, "Whether store by group was enabled or not");
         storeByGroupOption.setRequired(true);
         options.addOption(storeByGroupOption);
 
@@ -244,34 +242,46 @@ public class NewtsConverter implements AutoCloseable {
             throw null;
         }
 
-        switch (cmd.hasOption('s') ? cmd.getOptionValue('s').toLowerCase() : null) {
+        if (!cmd.hasOption('s')) {
+            new HelpFormatter().printHelp(80, CMD_SYNTAX, String.format("ERROR: Option for storage-strategy must be spcified%n"), options, null);
+            System.exit(1);
+            throw null;
+        }
+
+        switch (cmd.getOptionValue('s').toLowerCase()) {
             case "storeByMetric":
             case "sbm":
             case "false":
-                storageStrategy = STORAGE_STRATEGY.STORE_BY_METRIC;
+                storageStrategy = StorageStrategy.STORE_BY_METRIC;
                 break;
 
             case "storeByGroup":
             case "sbg":
             case "true":
-                storageStrategy = STORAGE_STRATEGY.STORE_BY_GROUP;
+                storageStrategy = StorageStrategy.STORE_BY_GROUP;
                 break;
 
             default:
-                new HelpFormatter().printHelp(80, CMD_SYNTAX, String.format("ERROR: Invalid value for storageStrategy%n"), options, null);
+                new HelpFormatter().printHelp(80, CMD_SYNTAX, String.format("ERROR: Invalid value for storage-strategy%n"), options, null);
                 System.exit(1);
                 throw null;
         }
 
-        switch (cmd.hasOption('t') ? cmd.getOptionValue('t').toLowerCase() : null) {
+        if (!cmd.hasOption('t')) {
+            new HelpFormatter().printHelp(80, CMD_SYNTAX, String.format("ERROR: Option rrd-tool must be specified%n"), options, null);
+            System.exit(1);
+            throw null;
+        }
+
+        switch (cmd.getOptionValue('t').toLowerCase()) {
             case "rrdtool":
             case "rrd":
-                storageTool = STORAGE_TOOL.RRDTOOL;
+                storageTool = StorageTool.RRDTOOL;
                 break;
 
             case "jrobin":
             case "jrb":
-                storageTool = STORAGE_TOOL.JROBIN;
+                storageTool = StorageTool.JROBIN;
                 break;
 
             default:
