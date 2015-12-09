@@ -32,7 +32,10 @@ import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.Assertion;
+import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.runner.RunWith;
 import org.cassandraunit.JUnitNewtsCassandra;
 import org.opennms.core.test.db.TemporaryDatabasePostgreSQL;
@@ -468,15 +471,18 @@ public class NewtsConverterIT implements TemporaryDatabaseAware {
         }
     }
 
-    private TemporaryDatabase database;
-
     @Autowired
     private SampleRepository repository;
 
     @Autowired
     private ResourceStorageDao resourceStorageDao;
 
+    private TemporaryDatabase database;
+
     private static boolean populated = false;
+
+    @Rule
+    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
     @Override
     public void setTemporaryDatabase(final TemporaryDatabase database) {
@@ -515,80 +521,81 @@ public class NewtsConverterIT implements TemporaryDatabaseAware {
                                       .resolve(storeByGroup ? "sbg" : "sbm")
                                       .resolve(storeByForeignSource ? "fs" : "id");
 
-        System.out.println(data.toAbsolutePath());
         assertTrue(Files.isDirectory(data));
+
+        exit.expectSystemExitWithStatus(0);
+        exit.checkAssertionAfterwards(() -> {
+            assertThat(resourceStorageDao.exists(RESOURCE_PATH_SNMP, 0), is(true));
+            assertThat(resourceStorageDao.getAttributes(RESOURCE_PATH_SNMP),
+                       hasItems(allOf(hasProperty("name", is("ifInOctets"))),
+                                allOf(hasProperty("name", is("ifSpeed")),
+                                      hasProperty("value", is("1000")))));
+
+            assertThat(resourceStorageDao.exists(RESOURCE_PATH_RESPONSE, 0), is(true));
+            assertThat(resourceStorageDao.getAttributes(RESOURCE_PATH_RESPONSE),
+                       hasItems(allOf(hasProperty("name", is("icmp")))));
+
+//            repository.select(Context.DEFAULT_CONTEXT,
+//                              new Resource(NewtsUtils.toResourceId(ResourcePath.get(RESOURCE_PATH_SNMP, "mib2-interfaces"))),
+//                              Optional.of(Timestamp.fromEpochSeconds(1416430800)),
+//                              Optional.of(Timestamp.fromEpochSeconds(1416474000)))
+//                      .forEach(r -> System.out.println(String.format("s: %s\t%11.2f",
+//                                                                     r.getElement("ifInOctets").getTimestamp().asDate().toString(),
+//                                                                     r.getElement("ifInOctets").getValue().doubleValue())));
+//
+//            repository.select(Context.DEFAULT_CONTEXT,
+//                              new Resource(NewtsUtils.toResourceId(ResourcePath.get(RESOURCE_PATH_SNMP, "mib2-interfaces"))),
+//                              Optional.of(Timestamp.fromEpochSeconds(1416430800)),
+//                              Optional.of(Timestamp.fromEpochSeconds(1416474000)),
+//                              new ResultDescriptor(Duration.seconds(7200))
+//                                      .datasource("ifInOctets", StandardAggregationFunctions.AVERAGE)
+//                                      .export("ifInOctets"),
+//                              Optional.of(Duration.seconds(7200)))
+//                    .forEach(r -> System.out.println(String.format("m: %s\t%11.2f",
+//                                                               r.getElement("ifInOctets").getTimestamp().asDate().toString(),
+//                                                               r.getElement("ifInOctets").getValue().doubleValue())));
+
+            final Results<Measurement> result = repository.select(Context.DEFAULT_CONTEXT,
+                                                                  new Resource(NewtsUtils.toResourceId(ResourcePath.get(RESOURCE_PATH_SNMP, "mib2-interfaces"))),
+                                                                  Optional.of(Timestamp.fromEpochSeconds(1414504800)),
+                                                                  Optional.of(Timestamp.fromEpochSeconds(1417047045)),
+                                                                  new ResultDescriptor(Duration.seconds(7200))
+                                                                          .datasource("ifInOctets", StandardAggregationFunctions.AVERAGE)
+                                                                          .export("ifInOctets"),
+                                                                  Optional.of(Duration.seconds(7200)));
+
+            assertThat(result.getRows().size(), is(EXPECTED_DATA.length));
+
+            int i = 0;
+            for (Results.Row<Measurement> r : result) {
+                final double d = r.getElement("ifInOctets").getValue().doubleValue() - EXPECTED_DATA[i].value;
+//                System.out.println(String.format(
+//                        "%4d: %s\t%11.2f %11.2f %11.2f %36s|%s",
+//                        i,
+//                        r.getElement("ifInOctets").getTimestamp().asDate().toString(),
+//                        r.getElement("ifInOctets").getValue().doubleValue(),
+//                        EXPECTED_DATA[i].value,
+//                        d,
+//                        d < -1.0 ? Strings.repeat("\u2592", (int) Math.abs(Math.log10(-d) * 10.0)) : "",
+//                        d >  1.0 ? Strings.repeat("\u2592", (int) Math.abs(Math.log10(d) * 10.0)) : ""));
+
+                assertThat(r.getTimestamp().asSeconds(),
+                           is(EXPECTED_DATA[i].timestamp));
+
+                if (i != 270) { // We got some errors on the RRA boundaries - ignore them
+                    assertThat(r.getElement("ifInOctets").getValue().doubleValue(),
+                               is(anyOf(equalTo(EXPECTED_DATA[i].value),
+                                        closeTo(EXPECTED_DATA[i].value, 0.001))));
+                }
+
+                i++;
+            }
+        });
 
         NewtsConverter.main("-o", OPENNMS_HOME.toString(),
                             "-r", data.toString(),
                             "-t", Boolean.toString(useRrdTool),
                             "-s", Boolean.toString(storeByGroup));
-
-        assertThat(resourceStorageDao.exists(RESOURCE_PATH_SNMP, 0), is(true));
-        assertThat(resourceStorageDao.getAttributes(RESOURCE_PATH_SNMP),
-                   hasItems(allOf(hasProperty("name", is("ifInOctets"))),
-                            allOf(hasProperty("name", is("ifSpeed")),
-                                  hasProperty("value", is("1000")))));
-
-        assertThat(resourceStorageDao.exists(RESOURCE_PATH_RESPONSE, 0), is(true));
-        assertThat(resourceStorageDao.getAttributes(RESOURCE_PATH_RESPONSE),
-                   hasItems(allOf(hasProperty("name", is("icmp")))));
-
-        repository.select(Context.DEFAULT_CONTEXT,
-                          new Resource(NewtsUtils.toResourceId(ResourcePath.get(RESOURCE_PATH_SNMP, "mib2-interfaces"))),
-                          Optional.of(Timestamp.fromEpochSeconds(1416430800)),
-                          Optional.of(Timestamp.fromEpochSeconds(1416474000)))
-                .forEach(r -> System.out.println(String.format("s: %s\t%11.2f",
-                                                               r.getElement("ifInOctets").getTimestamp().asDate().toString(),
-                                                               r.getElement("ifInOctets").getValue().doubleValue())));
-
-//        repository.select(Context.DEFAULT_CONTEXT,
-//                          new Resource(NewtsUtils.toResourceId(ResourcePath.get(RESOURCE_PATH_SNMP, "mib2-interfaces"))),
-//                          Optional.of(Timestamp.fromEpochSeconds(1416430800)),
-//                          Optional.of(Timestamp.fromEpochSeconds(1416474000)),
-//                          new ResultDescriptor(Duration.seconds(7200))
-//                                  .datasource("ifInOctets", StandardAggregationFunctions.AVERAGE)
-//                                  .export("ifInOctets"),
-//                          Optional.of(Duration.seconds(7200)))
-//                .forEach(r -> System.out.println(String.format("m: %s\t%11.2f",
-//                                                               r.getElement("ifInOctets").getTimestamp().asDate().toString(),
-//                                                               r.getElement("ifInOctets").getValue().doubleValue())));
-
-        final Results<Measurement> result = repository.select(Context.DEFAULT_CONTEXT,
-                                                              new Resource(NewtsUtils.toResourceId(ResourcePath.get(RESOURCE_PATH_SNMP, "mib2-interfaces"))),
-                                                              Optional.of(Timestamp.fromEpochSeconds(1414504800)),
-                                                              Optional.of(Timestamp.fromEpochSeconds(1417047045)),
-                                                              new ResultDescriptor(Duration.seconds(7200))
-                                                                      .datasource("ifInOctets", StandardAggregationFunctions.AVERAGE)
-                                                                      .export("ifInOctets"),
-                                                              Optional.of(Duration.seconds(7200)));
-
-        assertThat(result.getRows().size(), is(EXPECTED_DATA.length));
-
-        int i = 0;
-        for (Results.Row<Measurement> r : result) {
-            final double d = r.getElement("ifInOctets").getValue().doubleValue() - EXPECTED_DATA[i].value;
-
-//            System.out.println(String.format(
-//                    "%4d: %s\t%11.2f %11.2f %11.2f %36s|%s",
-//                    i,
-//                    r.getElement("ifInOctets").getTimestamp().asDate().toString(),
-//                    r.getElement("ifInOctets").getValue().doubleValue(),
-//                    EXPECTED_DATA[i].value,
-//                    d,
-//                    d < -1.0 ? Strings.repeat("\u2592", (int) Math.abs(Math.log10(-d) * 10.0)) : "",
-//                    d >  1.0 ? Strings.repeat("\u2592", (int) Math.abs(Math.log10(d) * 10.0)) : ""));
-
-            assertThat(r.getTimestamp().asSeconds(),
-                       is(EXPECTED_DATA[i].timestamp));
-
-            if (i != 270) { // We got some errors on the RRA boundaries - ignore them
-                assertThat(r.getElement("ifInOctets").getValue().doubleValue(),
-                           is(anyOf(equalTo(EXPECTED_DATA[i].value),
-                                    closeTo(EXPECTED_DATA[i].value, 0.001))));
-            }
-
-            i++;
-        }
     }
 
     @Test public void test000() throws Exception { execute(false, false, false); }

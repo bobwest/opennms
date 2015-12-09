@@ -42,9 +42,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.SortedMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.base.Optional;
@@ -80,6 +83,7 @@ import org.opennms.newts.api.SampleRepository;
 import org.opennms.newts.api.Timestamp;
 import org.opennms.newts.api.ValueType;
 import org.opennms.newts.api.search.Indexer;
+import org.opennms.newts.cassandra.CassandraSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -123,6 +127,8 @@ public class NewtsConverter implements AutoCloseable {
             this.foreignId = foreignId;
         }
     }
+
+    private final ClassPathXmlApplicationContext context;
 
     private final Path onmsHome;
     private final Path rrdDir;
@@ -178,6 +184,8 @@ public class NewtsConverter implements AutoCloseable {
                 .toFormatter();
 
         LOG.info("Conversion Finished: metrics: {}, samples: {}, time: {}", processedMetrics, processedSamples, formatter.print(period));
+
+        System.exit(0);
     }
 
     private NewtsConverter(final String... args) {
@@ -276,11 +284,13 @@ public class NewtsConverter implements AutoCloseable {
         switch (cmd.getOptionValue('t').toLowerCase()) {
             case "rrdtool":
             case "rrd":
+            case "true":
                 storageTool = StorageTool.RRDTOOL;
                 break;
 
             case "jrobin":
             case "jrb":
+            case "false":
                 storageTool = StorageTool.JROBIN;
                 break;
 
@@ -351,11 +361,10 @@ public class NewtsConverter implements AutoCloseable {
         }
 
         try {
-            final ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(new String[]{
+            this.context = new ClassPathXmlApplicationContext(new String[]{
                     "classpath:/META-INF/opennms/applicationContext-soa.xml",
                     "classpath:/META-INF/opennms/applicationContext-newts.xml"
             });
-            context.registerShutdownHook();
 
             this.repository = context.getBean(SampleRepository.class);
             this.indexer = context.getBean(Indexer.class);
@@ -659,12 +668,13 @@ public class NewtsConverter implements AutoCloseable {
     @Override
     public void close() {
         this.executor.shutdown();
-
         while (!this.executor.isTerminated()) {
             try {
                 this.executor.awaitTermination(10, TimeUnit.SECONDS);
             } catch (final InterruptedException e) {
             }
         }
+
+        this.context.close();
     }
 }

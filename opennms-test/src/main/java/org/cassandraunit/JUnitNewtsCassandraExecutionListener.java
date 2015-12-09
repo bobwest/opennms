@@ -74,7 +74,8 @@ public class JUnitNewtsCassandraExecutionListener extends AbstractTestExecutionL
             return;
         }
 
-        m_cassandraUnit = new CassandraCQLUnit(getDataSet(config.keyspace()), config.configurationFileName());
+        m_cassandraUnit = new CassandraCQLUnit(getDataSet(config.keyspace()), config.configurationFileName(),
+                                               config.host(), config.port());
 
         if (!m_initialized) {
             m_cassandraUnit.before();
