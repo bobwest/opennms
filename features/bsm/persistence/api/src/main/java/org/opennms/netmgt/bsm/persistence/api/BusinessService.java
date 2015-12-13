@@ -165,7 +165,8 @@ public class BusinessService {
         }
         allReductionKeys.addAll(getReductionKeys());
         return allReductionKeys;
-    
+    }
+
     @OneToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "bsm_service_children",
                joinColumns = @JoinColumn(name = "bsm_service_parent", referencedColumnName = "id"),
