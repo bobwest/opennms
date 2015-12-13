@@ -80,6 +80,7 @@ public class BusinessServiceDTOJaxbTest extends XmlTestNoCastor<BusinessServiceD
                     "<reductionKey>myReductionKeyB</reductionKey>" +
                     "<reductionKey>myReductionKeyA</reductionKey>" +
                "</reductionKeys>" +
+               "<child-services/>" +
             "</business-service>",
             null
         }});
