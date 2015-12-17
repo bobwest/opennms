@@ -97,6 +97,15 @@ public class SyslogNorthbounder extends AbstractNorthbounder implements Initiali
         setMaxPreservedAlarms(getConfig().getQueueSize());
     }
 
+    /* (non-Javadoc)
+     * @see org.opennms.netmgt.alarmd.api.support.AbstractNorthbounder#onStop()
+     */
+    @Override
+    protected void onStop() {
+        Syslog.destroyInstance(getName());
+        super.onStop();
+    }
+
     /**
      * The abstraction makes a call here to determine if the alarm should be
      * placed on the queue of alarms to be sent northerly.
