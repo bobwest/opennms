@@ -28,20 +28,17 @@
 
 package org.opennms.netmgt.alarmd.northbounder.email;
 
-import java.io.ByteArrayInputStream;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.IOUtils;
 import org.opennms.core.utils.PropertiesUtils;
-import org.opennms.core.xml.CastorUtils;
 import org.opennms.javamail.JavaMailerException;
 import org.opennms.javamail.JavaSendMailer;
 import org.opennms.netmgt.alarmd.api.NorthboundAlarm;
 import org.opennms.netmgt.alarmd.api.NorthbounderException;
 import org.opennms.netmgt.alarmd.api.support.AbstractNorthbounder;
 import org.opennms.netmgt.config.javamail.SendmailConfig;
-import org.opennms.netmgt.config.javamail.SendmailMessage;
 import org.opennms.netmgt.dao.api.JavaMailConfigurationDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +47,7 @@ import org.springframework.beans.factory.InitializingBean;
 /**
  * Forwards alarms via Email.
  * 
- * @author <a href="mailto:agalue@opennms.org">Alejandro Galue</a>
+ * @author <a href="mailto:agalue@opennms.org>Alejandro Galue</a>
  */
 public class EmailNorthbounder extends AbstractNorthbounder implements InitializingBean {
 
@@ -69,12 +66,6 @@ public class EmailNorthbounder extends AbstractNorthbounder implements Initializ
     /** The Sendmail Configuration. */
     private SendmailConfig m_sendmail;
 
-    /** The Email from field. */
-    private String m_emailFrom;
-
-    /** The Email to field. */
-    private String m_emailTo;
-
     /** The Email subject format. */
     private String m_emailSubjectFormat;
 
@@ -85,35 +76,17 @@ public class EmailNorthbounder extends AbstractNorthbounder implements Initializ
      * Instantiates a new SNMP Trap northbounder.
      *
      * @param configDao the SNMP Trap configuration DAO
-     * @param javaMailDao the JavaMail configuration DAO
+     * @param javaMailDao the java mail DAO
      * @param destinationName the destination name
      */
     public EmailNorthbounder(EmailNorthbounderConfigDao configDao, JavaMailConfigurationDao javaMailDao, String destinationName) {
         super(NBI_NAME + ":" + destinationName);
         m_configDao = configDao;
         m_destination = configDao.getConfig().getEmailDestination(destinationName);
-
-        // Creating a local copy of the SendmailConfig object, to avoid potential thread contention issues.
-        ByteArrayInputStream is = null;
-        try {
-            final SendmailConfig sendmail = javaMailDao.getSendMailConfig(destinationName);
-            if (sendmail != null) {
-                final String sendmailText = CastorUtils.marshal(sendmail);
-                is = new ByteArrayInputStream(sendmailText.getBytes());
-                m_sendmail = CastorUtils.unmarshal(SendmailConfig.class, is);
-            }
-        } catch (Exception e) {
-            LOG.error("Can't create a copy of the SendmailConfig object named {}.", destinationName, e);
-        } finally {
-            IOUtils.closeQuietly(is);
-        }
-
-        // Saving a local copy of the templates, as they will be overridden every time a new email has to be sent.
+        m_sendmail = javaMailDao.getSendMailConfig(destinationName);
         if (m_sendmail != null && m_sendmail.getSendmailMessage() != null) {
             m_emailSubjectFormat = m_sendmail.getSendmailMessage().getSubject();
             m_emailBodyFormat = m_sendmail.getSendmailMessage().getBody();
-            m_emailFrom = m_sendmail.getSendmailMessage().getFrom();
-            m_emailTo = m_sendmail.getSendmailMessage().getTo();
         }
     }
 
@@ -122,7 +95,7 @@ public class EmailNorthbounder extends AbstractNorthbounder implements Initializ
      */
     @Override
     public void afterPropertiesSet() throws Exception {
-        if (m_destination == null || m_sendmail == null) {
+        if (m_destination == null || m_sendmail == null || m_emailSubjectFormat == null || m_emailBodyFormat == null) {
             LOG.info("Email Northbounder is currently disabled, rejecting alarm.");
             String msg = "Email forwarding configuration is not initialized.";
             IllegalStateException e = new IllegalStateException(msg);
@@ -175,6 +148,7 @@ public class EmailNorthbounder extends AbstractNorthbounder implements Initializ
         for (NorthboundAlarm alarm : alarms) {
             try {
                 JavaSendMailer mailer = new JavaSendMailer(getSendmailConfig(alarm), false);
+                mailer.setDebug(true); // FIXME ?
                 mailer.send();
             } catch (JavaMailerException e) {
                 LOG.error("Can't send email for {}", alarm, e);
@@ -189,27 +163,11 @@ public class EmailNorthbounder extends AbstractNorthbounder implements Initializ
      * @return the sendmail configuration
      */
     protected SendmailConfig getSendmailConfig(NorthboundAlarm alarm) {
-        SendmailMessage message = new SendmailMessage();
-        message.setFrom(m_emailFrom);
-        message.setTo(m_emailTo);
-        message.setSubject(m_emailSubjectFormat);
-        message.setBody(m_emailBodyFormat);
-        for (EmailFilter filter : m_destination.getFilters()) {
-            if (filter.accepts(alarm)) {
-                filter.update(message);
-                continue;
-            }
-        }
-        LOG.debug("getSendmailConfig: from = {}", message.getFrom());
-        LOG.debug("getSendmailConfig: to = {}", message.getTo());
-        Map<String, Object> mapping = createMapping(alarm);
-        final String subject = PropertiesUtils.substitute(message.getSubject(), mapping);
-        LOG.debug("getSendmailConfig: subject = {}", subject);
-        message.setSubject(subject);
-        final String body = PropertiesUtils.substitute(message.getBody(), mapping);
-        LOG.debug("getSendmailConfig: body = {}", body);
-        message.setBody(body);
-        m_sendmail.setSendmailMessage(message);
+        Map<String, Object> mapping = createMapping(new HashMap<Integer, Map<String, Object>>(), alarm);
+        final String subject = PropertiesUtils.substitute(m_emailSubjectFormat, mapping);
+        m_sendmail.getSendmailMessage().setSubject(subject);
+        final String body = PropertiesUtils.substitute(m_emailBodyFormat, mapping);
+        m_sendmail.getSendmailMessage().setBody(body);
         return m_sendmail;
     }
 
