@@ -47,6 +47,7 @@ import com.vaadin.annotations.Title;
 import com.vaadin.server.ExternalResource;
 import com.vaadin.server.Page;
 import com.vaadin.server.VaadinRequest;
+import com.vaadin.server.Page.Styles;
 import com.vaadin.shared.ui.label.ContentMode;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.CustomLayout;
@@ -164,6 +165,25 @@ public class PluginManagerAdminApplication extends UI {
 		m_rootLayout.setSizeFull();
 		m_rootLayout.addStyleName("root-layout");
 		setContent(m_rootLayout);
+		
+		// dynamically inject style for non write borders - avoids changing themes css
+		// Get the stylesheet of the page
+		Styles styles = Page.getCurrent().getStyles();
+        // inject the new font size as a style. We need .v-app to override Vaadin's default styles here
+		styles.add(".v-app .v-textfield-readonly {border: 1px solid #b6b6b6!important;"
+		+ " border-top-color: #9d9d9d!important;"
+		+ "border-bottom-color: #d6d6d6!important;"
+		+ "border-right-color: #d6d6d6!important;"
+		+ " opacity: 1.0!important;"
+		+ "filter: none;  }"); 
+		styles.add(".v-app .v-textarea-readonly {border: 1px solid #b6b6b6!important;"
+		+ " border-top-color: #9d9d9d!important;"
+		+ "border-bottom-color: #d6d6d6!important;"
+		+ "border-right-color: #d6d6d6!important;"
+		+ " opacity: 1.0!important;"
+		+ "filter: none;  }"); 
+		
+		
 		addHeader();
 		
 		//add diagnostic page links
