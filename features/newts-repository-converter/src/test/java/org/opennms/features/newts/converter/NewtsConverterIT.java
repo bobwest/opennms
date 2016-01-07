@@ -81,9 +81,7 @@ import static org.hamcrest.Matchers.*;
                                                  "org.opennms.newts.config.max_batch_delay=0", // No delay
                                                  "org.opennms.timeseries.strategy=newts"})
 @JUnitTemporaryDatabase()
-@JUnitNewtsCassandra(host=NewtsConverterIT.CASSANDRA_HOST,
-                     port=NewtsConverterIT.CASSANDRA_PORT,
-                     keyspace=NewtsConverterIT.CASSANDRA_KEYSPACE)
+@JUnitNewtsCassandra(keyspace=NewtsConverterIT.CASSANDRA_KEYSPACE)
 public class NewtsConverterIT implements TemporaryDatabaseAware {
     protected final static String CASSANDRA_HOST = "localhost";
     protected final static int CASSANDRA_PORT = 9043;
