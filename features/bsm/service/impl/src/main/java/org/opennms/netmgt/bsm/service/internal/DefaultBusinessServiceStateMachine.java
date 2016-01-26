@@ -28,6 +28,7 @@
 
 package org.opennms.netmgt.bsm.service.internal;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,6 +36,10 @@ import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import org.opennms.netmgt.bsm.service.BusinessServiceStateChangeHandler;
 import org.opennms.netmgt.bsm.service.BusinessServiceStateMachine;
@@ -47,10 +52,6 @@ import org.opennms.netmgt.bsm.service.model.edge.Edge;
 import org.opennms.netmgt.bsm.service.model.edge.IpServiceEdge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 public class DefaultBusinessServiceStateMachine implements BusinessServiceStateMachine {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultBusinessServiceStateMachine.class);
@@ -182,8 +183,12 @@ public class DefaultBusinessServiceStateMachine implements BusinessServiceStateM
             edge.getMapFunction().map(bsStatus).ifPresent(s -> statusList.add(s));
         }
 
+
+        //
+        HashMap<Edge, Status> edgesToStatus = new HashMap<>();
+
         // Reduce
-        final Status overallStatus = businessService.getReduceFunction().reduce(statusList).orElse(DEFAULT_SEVERITY);
+        final Status overallStatus = businessService.getReduceFunction().reduce(businessService.getEdges(), statusList).orElse(DEFAULT_SEVERITY);
 
         // Apply lower bound, severity states like INDETERMINE and CLEARED don't always make sense
         return overallStatus.isLessThan(MIN_SEVERITY) ? MIN_SEVERITY : overallStatus;
