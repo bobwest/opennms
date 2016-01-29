@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+      
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <artifactId>org.opennms.features</artifactId>
@@ -29,13 +30,6 @@
     <groupId>org.opennms.core</groupId>
     <artifactId>org.opennms.core.api</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.opennms</groupId>
-      <artifactId>opennms-webapp-rest</artifactId>
-      <type>jar</type>
-      <version>${project.version}</version>
-    </dependency>
-    <!-- TODO REMOVE -->
     <dependency>
       <groupId>org.opennms.dependencies</groupId>
       <artifactId>jersey-client-dependencies</artifactId>
