@@ -46,9 +46,17 @@
       <groupId>org.opennms.features.reporting</groupId>
       <artifactId>org.opennms.features.reporting.sdo</artifactId>
     </dependency>
+<!-- TODO REMOVE -->
+<!--     <dependency> -->
+<!--       <groupId>org.opennms.dependencies</groupId> -->
+<!--       <artifactId>jersey-client-dependencies</artifactId> -->
+<!--       <type>pom</type> -->
+<!--       <version>${project.version}</version> -->
+<!--     </dependency> -->
+<!-- TODO added in  -->
     <dependency>
       <groupId>org.opennms.dependencies</groupId>
-      <artifactId>jersey-client-dependencies</artifactId>
+      <artifactId>cxf-dependencies</artifactId>
       <type>pom</type>
     </dependency>
     <dependency>

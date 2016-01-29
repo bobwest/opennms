@@ -70,6 +70,14 @@
                   <classifier>jar-with-dependencies</classifier>
                   <outputDirectory>${project.build.directory}/jasperstudio-extension</outputDirectory>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>org.opennms.features</groupId>
+                  <artifactId>resource-cli</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>onejar</classifier>
+                  <destFileName>opennms_resource-cli-onejar.jar</destFileName>
+                  <outputDirectory>${project.build.directory}/resource-cli/</outputDirectory>
+                </artifactItem>
               </artifactItems>
             </configuration>
           </execution>
@@ -93,6 +101,7 @@
           </execution>
         </executions>
       </plugin>
+<!--  TODO REMOVE STOPPING REPORT BUILD
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>jasperreports-maven-plugin</artifactId>
@@ -143,6 +152,7 @@
           </dependency>
         </dependencies>
       </plugin>
+ -->      
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
         <executions>
@@ -399,11 +409,20 @@
       <version>${project.version}</version>
       <scope>compile</scope>
     </dependency>
+    <!-- TODO added resource cli now one-jar goes in /bin -->
+    <!--     
     <dependency>
       <groupId>org.opennms.features</groupId>
       <artifactId>resource-cli</artifactId>
       <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.opennms.dependencies</groupId>
+          <artifactId>jersey-client-dependencies</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
+    -->
     <!--
     <dependency>
       <groupId>org.opennms.features</groupId>
@@ -571,6 +590,13 @@
     <dependency>
       <groupId>org.opennms.features.reporting</groupId>
       <artifactId>org.opennms.features.reporting.repository</artifactId>
+      <!-- TODO added -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.opennms.dependencies</groupId>
+          <artifactId>jersey-client-dependencies</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.opennms.features.reporting</groupId>

@@ -2320,9 +2320,17 @@
         <artifactId>opennms-install</artifactId>
         <version>${project.version}</version>
       </dependency>
+<!-- TODO REMOVE -->
       <dependency>
         <groupId>org.opennms.dependencies</groupId>
         <artifactId>jersey-client-dependencies</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+      </dependency>
+<!-- TODO ADDED -->
+      <dependency>
+        <groupId>org.opennms.dependencies</groupId>
+        <artifactId>cxf-dependencies</artifactId>
         <version>${project.version}</version>
         <type>pom</type>
       </dependency>

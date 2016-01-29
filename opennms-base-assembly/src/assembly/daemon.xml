@@ -81,6 +81,10 @@
       <directory>${project.build.directory}/remote-poller/lib</directory>
       <outputDirectory>bin</outputDirectory>
     </fileSet>
+    <fileSet>
+      <directory>${project.build.directory}/resource-cli</directory>
+      <outputDirectory>bin</outputDirectory>
+    </fileSet>
   </fileSets>
   <dependencySets>
     <dependencySet>
