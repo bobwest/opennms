@@ -1,0 +1,16 @@
+{
+  "name": "opennms-smoke-tests",
+  "version": "17.0.1-SNAPSHOT",
+  "main": "src/main/javascript/index.js",
+  "dependencies": {
+    "casperjs": "^1.1.0-beta3",
+    "eslint": "^1.10.3",
+    "eslint-friendly-formatter": "^1.2.2",
+    "eslint-loader": "^1.2.1",
+    "phantomjs": "^1.9.19"
+  },
+  "scripts": {
+    "test": "npm run lint && find src/test/javascript/tests -type f | xargs casperjs test",
+    "lint": "eslint . --ext .js"
+  }
+}
