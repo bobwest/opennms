@@ -1,23 +1,59 @@
 'use strict';
 
 var expected = {
-	'Search': 'http://localhost:8980/opennms/element/index.jsp',
+	'Search': {
+		href: 'http://localhost:8980/opennms/element/index.jsp',
+		linkPageSelector: 'h3[class="panel-title"]:first-of-type',
+		linkPageText: 'Search for Nodes'
+	},
 	'Info': {
 		children: {
-			'Nodes': 'http://localhost:8980/opennms/element/nodeList.htm',
-			'Assets': 'http://localhost:8980/opennms/asset/index.jsp',
-			'Path Outages': 'http://localhost:8980/opennms/pathOutage/index.jsp'
+			'Nodes': {
+				href: 'http://localhost:8980/opennms/element/nodeList.htm',
+				linkPageSelector: 'h3[class="panel-title"]',
+				linkPageText: 'Nodes'
+			},
+			'Assets': {
+				href: 'http://localhost:8980/opennms/asset/index.jsp',
+				linkPageSelector: 'h3[class="panel-title"]',
+				linkPageText: 'Search Asset Information'
+			},
+			'Path Outages': {
+				href: 'http://localhost:8980/opennms/pathOutage/index.jsp',
+				linkPageSelector: 'h3[class="panel-title"]',
+				linkPageText: 'All Path Outages'
+			}
 		}
 	},
 	'Status': {
 		children: {
-			'Events': 'http://localhost:8980/opennms/event/index',
-			'Alarms': 'http://localhost:8980/opennms/alarm/index.htm',
-			'Notifications': 'http://localhost:8980/opennms/notification/index.jsp',
-			'Outages': 'http://localhost:8980/opennms/outage/index.jsp',
+			'Events': {
+				href: 'http://localhost:8980/opennms/event/index',
+				linkPageSelector: 'h3[class="panel-title"]',
+				linkPageText: 'Event Queries'
+			},
+			'Alarms': {
+				href: 'http://localhost:8980/opennms/alarm/index.htm',
+				linkPageSelector: 'h3[class="panel-title"]',
+				linkPageText: 'Alarm Queries'
+			},
+			'Notifications': {
+				href: 'http://localhost:8980/opennms/notification/index.jsp',
+				linkPageSelector: 'h3[class="panel-title"]',
+				linkPageText: 'Notification queries'
+			},
+			'Outages': {
+				href: 'http://localhost:8980/opennms/outage/index.jsp',
+				linkPageSelector: 'h3[class="panel-title"]',
+				linkPageText: 'Outage Menu'
+			},
 			'Surveillance': 'http://localhost:8980/opennms/surveillance-view.jsp',
 			'Heatmap': 'http://localhost:8980/opennms/heatmap/index.jsp',
-			'Distributed Status': 'http://localhost:8980/opennms/distributedStatusSummary.htm'
+			'Distributed Status': {
+				href: 'http://localhost:8980/opennms/distributedStatusSummary.htm',
+				linkPageSelector: 'h3[class="panel-title"]',
+				linkPageText: 'Distributed Status Summary Error: No Applications Defined'
+			}
 		}
 	},
 	'Reports': {
@@ -76,8 +112,13 @@ var expected = {
 };
 
 casper.test.begin('OpenNMS Nav Bar Menu', 33, function suite(test) {
-	require('../../util/login').go(casper);
+	require('../../util/init').configure(casper);
+
+	var login = require('../../util/login');
 	var utils = require('utils');
+
+	login.go(casper);
+
 	var getElement = function(selector) {
 		var elements = rootElement.querySelectorAll(selector);
 		if (elements) {
@@ -108,6 +149,12 @@ casper.test.begin('OpenNMS Nav Bar Menu', 33, function suite(test) {
 			if (entry.href) {
 				ret.href = entry.href;
 			}
+			if (entry.linkPageSelector) {
+				ret.linkPageSelector = entry.linkPageSelector;
+			}
+			if (entry.linkPageText) {
+				ret.linkPageText = entry.linkPageText;
+			}
 		}
 		if (!ret.href) {
 			ret.href = '#';
@@ -116,29 +163,100 @@ casper.test.begin('OpenNMS Nav Bar Menu', 33, function suite(test) {
 		return ret;
 	};
 
-	var testSelectorExists = function(selector) {
+	var testSelectorExists = function(selector, name) {
 		casper.then(function() {
-			test.assertExists(selector);
+			test.assertExists(selector, name);
 		});
+	};
+
+	var testClickable = function(moveto, selector, text, name) {
+		if (!utils.isArray(moveto)) {
+			moveto = [moveto];
+		}
+		for (var m=0, len=moveto.length; m < len; m++) {
+			var loc = moveto[m];
+			casper.then(function() {
+				this.mouseEvent('mouseover', loc);
+			});
+		}
+		casper.then(function() {
+			//console.log('click: ' + moveto[moveto.length-1]);
+			this.click(moveto[moveto.length-1]);
+		});
+
+		if (selector) {
+			if (text) {
+				var desc;
+				if (name) {
+					desc = name + ' link target page has text "' + text + '"';
+				}
+				casper.waitForSelector(selector, function() {
+					test.assertSelectorHasText(selector, text, desc);
+				});
+			} else {
+				var desc;
+				if (name) {
+					desc = name + ' link target page selector matches.';
+				}
+				casper.waitForSelector(selector, function() {
+					test.assertExists(selector, desc);
+				});
+			}
+		}
+
+		casper.back();
+	};
+
+	var getMenuEntryName = function(entries) {
+		if (!utils.isArray(entries)) {
+			entries = [entries];
+		}
+		return '[' + entries.join(' -> ') + ']';
 	};
 
 	for (var text in expected) {
 		if (expected.hasOwnProperty(text)) {
 			var entry = getEntry(text, expected);
 			//var selector = 'ul > li > a[name=\"' + entry.selector.replace(/\"/, '\\\"') + '\"]';
-			testSelectorExists('ul > li > a[name=\"' + entry.selector.replace(/\"/, '\\\"') + '\"]');
+			var entrySelector = 'ul > li > a[name=\"' + entry.selector.replace(/\"/, '\\\"') + '\"]';
+			testSelectorExists(entrySelector, getMenuEntryName(text) + ' menu entry exists');
+			testClickable(entrySelector, entry.linkPageSelector, entry.linkPageText, getMenuEntryName(text));
 			if (expected[text].children) {
 				var children = expected[text].children;
 				for (var child in children) {
 					if (children.hasOwnProperty(child)) {
 						var childEntry = getEntry(child, children, text);
-						testSelectorExists('ul > li > ul > li > a[name=\"' + childEntry.selector.replace(/\"/, '\\\"') + '\"]');
+						var childSelector = 'ul > li > ul > li > a[name=\"' + childEntry.selector.replace(/\"/, '\\\"') + '\"]';
+						testSelectorExists(childSelector, getMenuEntryName([text, child]) + ' menu entry exists');
+						testClickable([entrySelector, childSelector], childEntry.linkPageSelector, childEntry.linkPageText, getMenuEntryName([text, child]));
 					}
 				}
 			}
 		}
 	}
 
+	/* Special Cases */
+	login.login(casper);
+
+	// surveillance view
+	casper.thenOpen('http://localhost:8980/opennms/surveillance-view.jsp');
+	casper.waitForSelector('#surveillance-view-ui');
+	casper.then(function() {
+		this.page.switchToChildFrame(0);
+	});
+	casper.waitForSelector('span[class="v-captiontext"]', function() {
+		test.assertSelectorHasText('span[class="v-captiontext"]', 'Surveillance view: default', 'Surveillance View iframe loads');
+	});
+	casper.then(function() {
+		this.page.switchToParentFrame();
+	});
+
+	// heatmap
+	casper.thenOpen('http://localhost:8980/opennms/heatmap/index.jsp');
+	casper.waitForSelector('#coreweb', function() {
+		test.assertSelectorHasText('h3[class="panel-title"] > a', 'Alarm Heatmap  (by Categories)', 'Heatmap iframe loads');
+		this.page.switchToParentFrame();
+	});
 	casper.run(function() {
 		setTimeout(function() {
 			test.done();

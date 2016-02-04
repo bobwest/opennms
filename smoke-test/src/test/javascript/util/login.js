@@ -1,21 +1,42 @@
 'use strict';
 
-function doLogin(casper, url, username, password) {
-	if (url === undefined) {
-		url = 'http://localhost:8980/opennms';
-	}
-	if (username === undefined) {
-		username = 'admin';
-	}
-	if (password === undefined) {
-		password = 'admin';
-	}
+var defaultOptions = {
+	url: 'http://localhost:8980/opennms',
+	username: 'admin',
+	password: 'admin'
+};
 
+function doLogin(casper, options) {
+	if (!options) { options = {}; }
+	for (var key in defaultOptions) {
+		if (!options.hasOwnProperty(key)) {
+			options[key] = defaultOptions[key];
+		}
+	}
 	casper.log('Filling in OpenNMS form.');
-	casper.start(url, function() {
+	casper.start(options.url, function() {
 		this.fill('form', {
-			j_username: username,
-			j_password: password
+			j_username: options.username,
+			j_password: options.password
+		}, true);
+	});
+	casper.then(function() {
+		casper.log('Finished filling out the form.');
+	});
+}
+
+function openLogin(casper, options) {
+	if (!options) { options = {}; }
+	for (var key in defaultOptions) {
+		if (!options.hasOwnProperty(key)) {
+			options[key] = defaultOptions[key];
+		}
+	}
+	casper.log('Filling in OpenNMS form.');
+	casper.thenOpen(options.url, function() {
+		this.fill('form', {
+			j_username: options.username,
+			j_password: options.password
 		}, true);
 	});
 	casper.then(function() {
@@ -24,5 +45,6 @@ function doLogin(casper, url, username, password) {
 }
 
 module.exports = {
-	go: doLogin
+	go: doLogin,
+	login: openLogin
 };
