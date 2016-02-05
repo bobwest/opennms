@@ -35,16 +35,6 @@ Once validated, add the agent specific details to the OpenNMS configuration, def
 
 For troubleshooting there is a set of commands you can use in Powershell verified on Windows Server 2012.
 
-IMPORTANT: Use BasicAuthentication just with _WinRM_ over _HTTPS_ with verifiable certificates in production environment.
-
-.Enable BasicAuthentication
-[source, shell]
-----
-winrm set winrm/config/client/auth '@{Basic="true"}'
-winrm set winrm/config/service/auth '@{Basic="true"}'
-winrm set winrm/config/service '@{AllowUnencrypted="true"}'
-----
-
 .Enable _WinRM_ in PowerShell
 [source, shell]
 ----
@@ -82,6 +72,16 @@ winrm e winrm/config/listener
 [source, shell]
 ----
 nc -z -w1 <windows-server-ip-or-host> 5985;echo $?
+----
+
+IMPORTANT: Use BasicAuthentication just with _WinRM_ over _HTTPS_ with verifiable certificates in production environment.
+
+.Enable BasicAuthentication
+[source, shell]
+----
+winrm set winrm/config/client/auth '@{Basic="true"}'
+winrm set winrm/config/service/auth '@{Basic="true"}'
+winrm set winrm/config/service '@{AllowUnencrypted="true"}'
 ----
 
 [[ga-performance-mgmt-collectors-wsman-agent-config]]
